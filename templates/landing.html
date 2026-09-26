@@ -6,6 +6,10 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/landing.css') }}">
 {% endblock %}
 
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/landing.js') }}"></script>
+{% endblock %}
+
 {% block content %}
 
 <section class="landing-hero">
@@ -24,7 +28,21 @@
         </p>
         <div class="landing-hero-actions">
             <a href="{{ url_for('register') }}" class="landing-hero-btn">Create free account</a>
-            <a href="#" class="landing-hero-btn">See how it works</a>
+            <button type="button" class="landing-hero-btn" data-video-open
+                    aria-haspopup="dialog" aria-controls="video-modal">See how it works</button>
+        </div>
+    </div>
+
+    <div class="video-modal" id="video-modal" hidden>
+        <div class="video-modal-content" role="dialog" aria-modal="true" aria-label="How Spendly works">
+            <button type="button" class="video-modal-close" data-video-close aria-label="Close video">&times;</button>
+            <div class="video-modal-frame">
+                {# Placeholder video — replace the ID in data-src with the real one #}
+                <iframe data-src="https://www.youtube.com/embed/aqz-KE-bpKQ"
+                        title="How Spendly works"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowfullscreen></iframe>
+            </div>
         </div>
     </div>
 
