@@ -1,11 +1,11 @@
 # Spec: Registration
 
 ## Overview
-Turn the existing static `GET /register` page into a working sign-up flow. A visitor submits name, email and password; the server validates the input, stores a new user with a hashed password in the `users` table, and redirects to the login page. This is Step 2 of the roadmap: it builds directly on the data layer from Step 1 and must exist before login/logout (Step 3) and the profile page (Step 4) can be implemented. Registration does not create a session; logging in remains Step 3.
+Turn the existing static `GET /register` page into a working sign-up flow. A visitor submits name, email, password and a password confirmation; the server validates the input, stores a new user with a hashed password in the `users` table, and redirects to the login page. This is Step 2 of the roadmap: it builds directly on the data layer from Step 1 and must exist before login/logout (Step 3) and the profile page (Step 4) can be implemented. Registration does not create a session; logging in remains Step 3.
 
 ## Depends on
 - Step 1 — Database setup (`.claude/specs/01-database-setup.md`): `users` table (`id`, `name`, `email` UNIQUE, `password_hash`, `created_at`), `get_db()` (sets `row_factory = sqlite3.Row` and `PRAGMA foreign_keys = ON`), and `init_db()` / `seed_db()` called at startup in `app.py`.
-- Existing `templates/register.html` (extends `base.html`, already has an `{% if error %}` block and fields `name`, `email`, `password`).
+- Existing `templates/register.html` (extends `base.html`, already has an `{% if error %}` block and fields `name`, `email`, `password`; a `confirm_password` field is added by this step).
 - Existing `login` route, used as the redirect target after success.
 
 ## Routes
@@ -19,13 +19,14 @@ No database changes. The existing `users` table already provides everything need
 
 New DB helper functions (in `database/db.py`, not inline in the route):
 - A function to look up a user by email (parameterized `SELECT`), used to detect an already-registered email.
-- A function to insert a new user from name, email and an already-hashed password (parameterized `INSERT`, committed, connection closed in `finally`, rollback on error), returning the new user's id. It must surface a duplicate-email `sqlite3.IntegrityError` so the route can handle a race between the lookup and the insert.
+- A function to insert a new user from name, email and an already-hashed password (parameterized `INSERT`, committed, connection closed in `finally`, rollback on error), returning the new user's id. On a duplicate-email `sqlite3.IntegrityError` it must roll back and raise a `DuplicateEmailError` (defined in `database/db.py`) so the route can handle a race between the lookup and the insert without importing `sqlite3`.
 
 ## Templates
 - **Create:** none.
 - **Modify:** `templates/register.html`
   - Change the form `action` from the hardcoded `/register` to `{{ url_for('register') }}`.
-  - Re-populate the `name` and `email` inputs with the submitted values after a validation error (never re-populate the password).
+  - Add a required `confirm_password` password input (label "Confirm password", `id`/`name` = `confirm_password`) directly after the `password` field, using the existing `.form-group` / `.form-input` classes.
+  - Re-populate the `name` and `email` inputs with the submitted values after a validation error (never re-populate the password or the confirmation).
   - Keep the existing `.auth-error` block for displaying the error message.
 
 ## Files to change
@@ -34,6 +35,7 @@ New DB helper functions (in `database/db.py`, not inline in the route):
 - `templates/register.html` — `url_for` form action and value re-population, as above.
 
 ## Files to create
+- `tests/conftest.py` — pytest fixture that points `database.db.DB_PATH` at a temporary file (set before `app` is first imported, because `app.py` runs `init_db()`/`seed_db()` at import time), seeds it, and yields a Flask test client.
 - `tests/test_registration.py` — pytest tests covering the Definition of done (there is currently no `tests/` directory; pytest and pytest-flask are already in `requirements.txt`). Tests must use a temporary database (e.g. by pointing `DB_PATH` at a temp file) so they never touch `expense_tracker.db`.
 
 ## New dependencies
@@ -55,20 +57,25 @@ No new dependencies.
   - `name`: trimmed, non-empty.
   - `email`: trimmed, lowercased before lookup and storage, non-empty, and containing `@` with non-empty parts around it.
   - `password`: at least 8 characters (matches the existing form placeholder "Min. 8 characters").
+  - `confirm_password`: must exactly equal `password`; otherwise show "Passwords do not match." A missing or empty confirmation counts as a mismatch. It is never stored.
   - A missing form field is treated as empty, not as a server error.
+  - Checks run in this order and stop at the first failure: name, email, password length, password confirmation, then duplicate email (lookup, then insert). A short password with a mismatched confirmation therefore shows the length error.
 - On a validation or duplicate-email error, re-render `register.html` with HTTP 200 and a specific `error` message; do not use bare string returns.
 - No session or `secret_key` is introduced in this step; successful registration redirects to the login page only.
 
 ## Definition of done
-- [ ] `GET /register` returns 200 and renders a form with `name`, `email` and `password` fields posting to the URL generated by `url_for('register')` (no literal `/register` in the template's form action).
+- [ ] `GET /register` returns 200 and renders a form with `name`, `email`, `password` and `confirm_password` fields posting to the URL generated by `url_for('register')` (no literal `/register` in the template's form action).
 - [ ] `POST /register` with a valid name, new email and an 8+ character password creates exactly one new row in `users` and responds with a 302 redirect to `/login`.
 - [ ] The stored `password_hash` for the new user differs from the submitted password and `check_password_hash(stored_hash, submitted_password)` returns `True`.
 - [ ] Submitting an email that already exists (including the seeded `demo@spendly.com` and a differently-cased variant such as `Demo@Spendly.com`) returns 200, shows an error message in the `.auth-error` block, and leaves the `users` row count unchanged.
-- [ ] Submitting an empty name, empty/invalid email (e.g. `foo`), or a password shorter than 8 characters returns 200 with an error message and creates no user.
-- [ ] After a failed submission, the rendered form contains the submitted name and email values and does not contain the submitted password.
+- [ ] Submitting an empty name, empty/invalid email (e.g. `foo`), a password shorter than 8 characters, or a `confirm_password` that differs from `password` (or is empty) returns 200 with an error message and creates no user.
+- [ ] A short password combined with a mismatched confirmation shows the password-length error, not the mismatch message.
+- [ ] A POST that omits the `confirm_password` key entirely returns 200 with "Passwords do not match." and creates no user.
+- [ ] A mismatched confirmation returns 200, shows "Passwords do not match." in the `.auth-error` block, and creates no user.
+- [ ] After a failed submission, the rendered form contains the submitted name and email values and does not contain the submitted password or confirmation.
 - [ ] Emails are stored trimmed and lowercased (verified by registering `  New@Example.com ` and reading the row back).
 - [ ] A submission with a missing field (e.g. no `password` key) returns 200 with an error, not a 400/500.
-- [ ] `database/db.py` contains the new helpers and `app.py` contains no `sqlite3` or SQL strings; every new query uses `?` placeholders (verified by code inspection / grep).
+- [ ] `database/db.py` contains the new helpers and `app.py` contains no `sqlite3` import or SQL strings (duplicate emails reach the route as `DuplicateEmailError`); every new query uses `?` placeholders (verified by code inspection / grep).
 - [ ] `requirements.txt` is unchanged and `templates/register.html` still extends `base.html`.
 - [ ] `tests/test_registration.py` exists, uses a temporary database, and `venv\Scripts\python.exe -m pytest` passes with all tests green.
 - [ ] Manual check: starting the app with `venv\Scripts\python.exe app.py`, registering through the browser at `http://127.0.0.1:5001/register` lands on `/login`, and the new user appears in `expense_tracker.db`.
