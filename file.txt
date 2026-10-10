@@ -1,0 +1,104 @@
+In `@template/base.html`, add the following two links to the footer:
+
+* **Terms & Conditions**
+* **Privacy Policy**
+
+Requirements:
+
+* Both should be plain text links with no special styling for now.
+* Use `href="#"` as the placeholder for both links since the target pages do not exist yet.
+* Do not modify anything else on the page.
+
+====================================================
+
+Create two new pages for the application:
+
+1. **Terms & Conditions**
+
+   * Create a dedicated Terms & Conditions page.
+   * Use a clean, simple layout consistent with the existing application's design.
+   * Include standard sections such as:
+
+     * Introduction
+     * Acceptance of Terms
+     * User Responsibilities
+     * Account/Service Usage
+     * Intellectual Property
+     * Prohibited Activities
+     * Third-Party Services
+     * Limitation of Liability
+     * Changes to the Terms
+     * Contact Information
+   * Use placeholder/general content where application-specific legal details are not available.
+   * Do not invent company-specific legal information.
+
+2. **Privacy Policy**
+
+   * Create a dedicated Privacy Policy page.
+   * Use the same layout and visual language as the Terms & Conditions page.
+   * Include standard sections such as:
+
+     * Introduction
+     * Information We Collect
+     * How We Use Information
+     * Cookies and Similar Technologies
+     * Data Sharing and Disclosure
+     * Data Security
+     * Data Retention
+     * User Rights
+     * Third-Party Services
+     * Changes to This Privacy Policy
+     * Contact Information
+   * Use placeholder/general content where application-specific details are unavailable.
+   * Do not claim that the application collects specific data unless this can be verified from the existing codebase.
+
+### Routing and Footer
+
+* Add routes for both pages using the application's existing routing approach.
+* Update the existing footer links:
+
+  * `Terms & Conditions` → Terms & Conditions page
+  * `Privacy Policy` → Privacy Policy page
+* Replace the current `href="#"` placeholders with the appropriate application routes.
+* Keep the links as plain text links without introducing unnecessary styling.
+
+### Important Constraints
+
+* First inspect the existing project structure, routing configuration, shared components, and styling conventions.
+* Reuse existing components/layouts where appropriate.
+* Follow the project's existing coding conventions.
+* Do not introduce new dependencies unless absolutely necessary.
+* Do not modify unrelated pages, components, styles, or functionality.
+* Keep the implementation minimal and production-ready.
+* After implementation, verify that both footer links navigate correctly and that the existing application functionality remains unchanged.
+
+=======================================
+
+Modify only hero section in @template/landing.html and @static/css/landing.css
+to match this image exactly. DO not touch any other part of the page.
+
+================
+
+Functionality
+Clicking "See how it works" must open a modal overlay.
+The modal should:
+Appear centered over the page.
+Include an embedded YouTube video using an <iframe>.
+Use any valid placeholder YouTube video URL for now. I will replace it later.
+Allow the video to be played directly inside the modal.
+Include a clearly visible Close (×) button.
+Clicking the Close button must close the modal.
+Clicking anywhere outside the modal content must also close the modal.
+When the modal closes, the YouTube video must stop playing completely so that audio/video does not continue in the background.
+Opening the modal again should load the video in a clean/stopped state.
+Technical Requirements
+Use vanilla JavaScript only.
+Do not use React, Angular, jQuery, Bootstrap, or any other JavaScript/UI library.
+Do not add any new dependencies or packages.
+Follow the existing project's HTML, CSS, and JavaScript structure and conventions.
+Use the existing modal/button styling conventions if they are already available.
+Scope Restriction — Very Important
+
+Do not modify any other part of the project.
+
+==========================
