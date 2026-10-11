@@ -28,6 +28,16 @@
     --radius-sm: 6px;
     --radius-md: 12px;
     --radius-lg: 20px;
+    --radius-control: 8px;
+
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 16px;
+    --space-4: 24px;
+    --space-5: 32px;
+    --space-6: 48px;
+
+    --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.06);
 }
 
 /* ------------------------------------------------------------------ */
@@ -582,7 +592,8 @@ a { color: inherit; text-decoration: none; }
 
 @media (max-width: 600px) {
     .nav-links a:not(.nav-cta) { display: none; }
-    .nav-links a:not(.nav-cta).nav-signout { display: inline; }
+    .nav-links a:not(.nav-cta).nav-signout,
+    .nav-links a:not(.nav-cta).nav-profile { display: inline; }
     .hero { padding: 3rem 1rem 2rem; }
     .legal-section { padding: 3rem 1rem 4rem; }
 }

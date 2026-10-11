@@ -55,7 +55,7 @@ def test_login_form_renders_with_url_for_action(client):
 def test_login_success_sets_int_user_id_and_redirects(client):
     response = login(client)
     assert response.status_code == 302
-    assert response.headers["Location"].endswith("/")
+    assert response.headers["Location"].endswith("/profile")
     user_id = session_user_id(client)
     assert isinstance(user_id, int)
     assert user_id == demo_id()
@@ -220,7 +220,7 @@ def test_stale_non_auth_session_and_failed_login_gives_no_user_id(client):
 
 def test_get_user_by_id_existing_returns_safe_fields(client):
     user = db.get_user_by_id(demo_id())
-    assert set(user.keys()) == {"id", "name", "email"}
+    assert set(user.keys()) == {"id", "name", "email", "created_at"}
     assert user["name"] == "Demo User"
     assert user["email"] == DEMO["email"]
 

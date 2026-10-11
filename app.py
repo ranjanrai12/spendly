@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 
 from flask import Flask, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -6,8 +7,12 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from database.db import (
     DuplicateEmailError,
     create_user,
+    get_category_totals,
     get_db,
+    get_expense_summary,
+    get_recent_expenses,
     get_user_by_email,
+    get_user_by_id,
     init_db,
     seed_db,
 )
@@ -26,6 +31,34 @@ app.secret_key = _secret_key or _DEV_ONLY_SECRET_KEY
 with app.app_context():
     init_db()
     seed_db()
+
+
+# ------------------------------------------------------------------ #
+# Template filters (presentation only)                                #
+# ------------------------------------------------------------------ #
+
+@app.template_filter("rupee")
+def rupee(value):
+    return f"₹{(value or 0):,.2f}"
+
+
+def _parse_date(value):
+    try:
+        return datetime.strptime(str(value)[:10], "%Y-%m-%d")
+    except ValueError:
+        return None
+
+
+@app.template_filter("pretty_date")
+def pretty_date(value):
+    parsed = _parse_date(value)
+    return parsed.strftime("%d %b %Y") if parsed else (value or "")
+
+
+@app.template_filter("month_year")
+def month_year(value):
+    parsed = _parse_date(value)
+    return parsed.strftime("%B %Y") if parsed else (value or "")
 
 
 # ------------------------------------------------------------------ #
@@ -99,13 +132,34 @@ def login():
 
     session.clear()
     session["user_id"] = int(user["id"])
-    return redirect(url_for("landing"))
+    return redirect(url_for("profile"))
 
 
 @app.route("/logout")
 def logout():
     session.clear()
     return redirect(url_for("landing"))
+
+
+@app.route("/profile")
+def profile():
+    user_id = session.get("user_id")
+    if not user_id:
+        return redirect(url_for("login"))
+
+    user = get_user_by_id(user_id)
+    if user is None:
+        session.clear()
+        return redirect(url_for("login"))
+
+    month = datetime.now().strftime("%Y-%m")
+    return render_template(
+        "profile.html",
+        user=user,
+        summary=get_expense_summary(user_id, month),
+        categories=get_category_totals(user_id),
+        expenses=get_recent_expenses(user_id),
+    )
 
 
 @app.route("/terms")
@@ -121,11 +175,6 @@ def privacy():
 # ------------------------------------------------------------------ #
 # Placeholder routes — students will implement these                  #
 # ------------------------------------------------------------------ #
-
-@app.route("/profile")
-def profile():
-    return "Profile page — coming in Step 4"
-
 
 @app.route("/expenses/add")
 def add_expense():
