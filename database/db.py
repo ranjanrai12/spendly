@@ -108,9 +108,55 @@ def get_user_by_id(user_id):
     conn = get_db()
     try:
         return conn.execute(
-            "SELECT id, name, email FROM users WHERE id = ?",
+            "SELECT id, name, email, created_at FROM users WHERE id = ?",
             (user_id,),
         ).fetchone()
+    finally:
+        conn.close()
+
+
+def get_expense_summary(user_id, month):
+    conn = get_db()
+    try:
+        row = conn.execute(
+            "SELECT COALESCE(SUM(amount), 0) AS total, "
+            "COUNT(*) AS count, "
+            "COALESCE(SUM(CASE WHEN substr(date, 1, 7) = ? THEN amount ELSE 0 END), 0) "
+            "AS month_total "
+            "FROM expenses WHERE user_id = ?",
+            (month, user_id),
+        ).fetchone()
+        return {
+            "total": float(row["total"]),
+            "count": int(row["count"]),
+            "month_total": float(row["month_total"]),
+        }
+    finally:
+        conn.close()
+
+
+def get_category_totals(user_id):
+    conn = get_db()
+    try:
+        return conn.execute(
+            "SELECT category, SUM(amount) AS total, COUNT(*) AS count "
+            "FROM expenses WHERE user_id = ? "
+            "GROUP BY category ORDER BY total DESC, category ASC",
+            (user_id,),
+        ).fetchall()
+    finally:
+        conn.close()
+
+
+def get_recent_expenses(user_id, limit=10):
+    conn = get_db()
+    try:
+        return conn.execute(
+            "SELECT id, amount, category, date, description "
+            "FROM expenses WHERE user_id = ? "
+            "ORDER BY date DESC, id DESC LIMIT ?",
+            (user_id, limit),
+        ).fetchall()
     finally:
         conn.close()
 

@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}Profile — Spendly{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="profile-page">
+
+    <header class="profile-card profile-header">
+        <div class="profile-avatar" aria-hidden="true">{{ user["name"][:1]|upper }}</div>
+        <div class="profile-identity">
+            <h1 class="profile-name">{{ user["name"] }}</h1>
+            <p class="profile-email">{{ user["email"] }}</p>
+        </div>
+        <p class="profile-pill profile-member-pill">Member since {{ user["created_at"]|month_year }}</p>
+    </header>
+
+    <section class="profile-stats" aria-label="Spending summary">
+        <div class="profile-card profile-stat-card">
+            <p class="profile-stat-label">
+                <span class="profile-icon profile-stat-icon" aria-hidden="true"><i data-lucide="wallet"></i></span>
+                Total spent
+            </p>
+            <p class="profile-stat-value">{{ summary.total|rupee }}</p>
+        </div>
+        <div class="profile-card profile-stat-card">
+            <p class="profile-stat-label">
+                <span class="profile-icon profile-stat-icon" aria-hidden="true"><i data-lucide="credit-card"></i></span>
+                Expenses
+            </p>
+            <p class="profile-stat-value">{{ summary.count }}</p>
+        </div>
+        <div class="profile-card profile-stat-card">
+            <p class="profile-stat-label">
+                <span class="profile-icon profile-stat-icon" aria-hidden="true"><i data-lucide="calendar"></i></span>
+                This month
+            </p>
+            <p class="profile-stat-value">{{ summary.month_total|rupee }}</p>
+        </div>
+    </section>
+
+    {% if summary.count == 0 %}
+    <section class="profile-card profile-empty">
+        <h2 class="profile-empty-title">No expenses yet</h2>
+        <p class="profile-empty-text">Once you start tracking spending, your category breakdown and recent expenses will show up here.</p>
+    </section>
+    {% else %}
+    {% set max_total = categories[0]["total"] if categories else 0 %}
+    <div class="profile-columns">
+    <section class="profile-card">
+        <h2 class="profile-section-title">
+            <span class="profile-icon" aria-hidden="true"><i data-lucide="tag"></i></span>
+            Recent expenses
+        </h2>
+        <div class="profile-table-wrap">
+            <table class="profile-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Category</th>
+                        <th>Description</th>
+                        <th class="profile-num">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for e in expenses %}
+                    <tr>
+                        <td>{{ e["date"]|pretty_date }}</td>
+                        <td><span class="profile-pill">{{ e["category"] }}</span></td>
+                        <td>{{ e["description"] if e["description"] else "—" }}</td>
+                        <td class="profile-num profile-amount">{{ e["amount"]|rupee }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+    <section class="profile-card">
+        <h2 class="profile-section-title">
+            <span class="profile-icon" aria-hidden="true"><i data-lucide="pie-chart"></i></span>
+            Spending by category
+        </h2>
+        <ul class="profile-categories">
+            {% for c in categories %}
+            <li class="profile-category">
+                <div class="profile-category-row">
+                    <span class="profile-category-name">{{ c["category"] }}</span>
+                    <span class="profile-category-count">{{ c["count"] }} {{ "expense" if c["count"] == 1 else "expenses" }}</span>
+                    <span class="profile-category-share">{{ ((c["total"] / summary.total) * 100)|round(1) if summary.total else 0 }}%</span>
+                    <span class="profile-amount">{{ c["total"]|rupee }}</span>
+                </div>
+                <div class="profile-bar">
+                    <div class="profile-bar-fill" style="width: {{ ((c['total'] / max_total) * 100)|round(1) if max_total else 0 }}%"></div>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+    </section>
+
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}
